@@ -2,7 +2,7 @@
 import argparse
 import json
 from pathlib import Path
-from scrapers import *
+from scrapers import ScrapeIt
 
 parser = argparse.ArgumentParser()
 
