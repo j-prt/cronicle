@@ -1,4 +1,4 @@
-"""Webscraping functions for collecting articles"""
+"""Webscraping functions for collecting articles."""
 
 import requests
 import feedparser
