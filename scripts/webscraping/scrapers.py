@@ -123,6 +123,10 @@ class ScrapeIt:
         from the front page(s) of HackerNews"""
         print('Scraping hackernews', end='')
         post_data = self._collect_hn_post_data(num_pages=num_pages)
+
+        if not post_data:
+            return None
+
         for post in post_data:
             post['comments'] = self._collect_hn_comments(
                 post['detail_url'],
@@ -282,7 +286,7 @@ class ScrapeIt:
 
     def lwl(self, checkpoint=None):
         """Collect data on reviews from the littlewhitelies movie blog.
-        Checkpoints are article titles.
+        Checkpoints are article URLs.
 
         Params
         ----------
@@ -312,13 +316,12 @@ class ScrapeIt:
             post_dict = {}
 
             post_dict['title'] = post.find('h3').get_text()
-
-            if post_dict['title'] == checkpoint:
-                return articles_list or None
-
             post_dict['author'] = post.select_one('p a').get_text()
             post_dict['url'] = post.find('a').get('href', None)
             post_dict['blurb'] = post.find('p', class_='excerpt').get_text()
+
+            if post_dict['url'] == checkpoint:
+                return articles_list or None
 
             score_types = ['anticipation', 'enjoyment', 'retrospect']
             marker = 0
@@ -338,13 +341,16 @@ class ScrapeIt:
 
     def rogerebert(self, checkpoint=None):
         """Get complete review details from rogerebert.com.
-        Checkpoints are review titles."""
+        Checkpoints are review URLs."""
         print('Scraping rogerebert', end='')
 
         if not checkpoint:
             checkpoint = self.checkpoints['rogerebert']
 
         reviews = self._collect_ebert_reviews(checkpoint=checkpoint)
+
+        if not reviews:
+            return None
 
         for review in reviews:
             details = self._collect_ebert_review_details(review['url'])
@@ -377,12 +383,12 @@ class ScrapeIt:
         for review in reviews:
             review_data = {}
 
-            title = review_data['title'] = review.find('h5').get_text(strip=True)
-            if title == checkpoint:
-                return review_list or None
-
+            review_data['title'] = review.find('h5').get_text(strip=True)
             review_data['author'] = review.find('h6').get_text(strip=True)
             review_data['url'] = base_url + review.find('a').get('href')
+
+            if review_data['url'] == checkpoint:
+                return review_list or None
 
             score_stars = review.find('span').find_all('i')
             score = 0
@@ -436,7 +442,7 @@ class ScrapeIt:
 
     def hollywood_reporter(self, checkpoint=None):
         """Collect data on reviews from the hollywood reporter movie blog.
-        Checkpoints are review titles.
+        Checkpoints are review URLs.
 
         Params
         ----------
@@ -471,13 +477,13 @@ class ScrapeIt:
         for review in reviews:
             details = {}
 
-            title = details['title'] = review.find('a').get_text(strip=True)
-            if title == checkpoint:
-                return reviews_list or None
-
+            details['title'] = review.find('a').get_text(strip=True)
             details['url'] = review.find('a').get('href')
             details['blurb'] = review.find('p').get_text(strip=True)
             details['author'] = review.find('div', class_='c-tagline').get_text(strip=True)
+
+            if details['url'] == checkpoint:
+                return reviews_list or None
 
             reviews_list.append(details)
 
@@ -489,7 +495,7 @@ class ScrapeIt:
 
     def npr_books(self, checkpoint=None):
         """Collect data on reviews from the npr book reviews page.
-        Checkpoints are article titles.
+        Checkpoints are article URLs.
 
         Params
         ----------
@@ -523,11 +529,12 @@ class ScrapeIt:
         for review in reviews:
             details = {}
 
-            title = details['title'] = review.find('h2').get_text(strip=True)
-            if title == checkpoint:
-                return article_list or None
+            details['title'] = review.find('h2').get_text(strip=True)
             details['url'] = review.find('a').get('href')
             details['blurb'] = review.find('div', class_='item-info').find('p').get_text(strip=True).split('•')[1]
+
+            if details['url'] == checkpoint:
+                return article_list or None
 
             article_list.append(details)
 
@@ -540,7 +547,7 @@ class ScrapeIt:
 
     def nyt_books(self, checkpoint=None):
         """Collect data on reviews from the nyt book reviews page.
-        Checkpoints are article titles.
+        Checkpoints are article URLs.
 
         Params
         ----------
@@ -579,11 +586,12 @@ class ScrapeIt:
             if not header:
                 continue
 
-            title = details['title'] = header.get_text(strip=True)
-            if title == checkpoint:
-                return article_list or None
+            details['title'] = header.get_text(strip=True)
             details['url'] = base_url + review.get('href')
             details['blurb'] = review.find('p').get_text(strip=True)
+
+            if details['url'] == checkpoint:
+                return article_list or None
 
             article_list.append(details)
 
