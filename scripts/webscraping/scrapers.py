@@ -16,6 +16,16 @@ import re
 import sys
 from bs4 import BeautifulSoup
 
+SITE_LIST = [
+    'arxiv',
+    'hackernews',
+    'techmeme',
+    'lwl',
+    'rogerebert',
+    'hollywood_reporter',
+    'npr_books',
+    'nyt_books',
+]
 CRAWL_DELAY = 5
 DEFAULT_HEADERS = {
     "Accept-Language":"en-US,en;q=0.9",
@@ -27,7 +37,13 @@ DEFAULT_HEADERS = {
 
 class ScrapeIt:
 
-    def __init__(self, crawl_delay=CRAWL_DELAY, headers=DEFAULT_HEADERS):
+    def __init__(
+            self,
+            checkpoints={},
+            crawl_delay=CRAWL_DELAY,
+            headers=DEFAULT_HEADERS
+        ):
+        self.checkpoints = {site:checkpoints.get(site) for site in SITE_LIST}
         self.crawl_delay = crawl_delay
         self.headers = headers
 
@@ -60,8 +76,10 @@ class ScrapeIt:
         ----------
         List[dict]
             Each dict refers to a paper."""
-
         print('Scraping arxiv', end='')
+
+        if not checkpoint:
+            checkpoint = self.checkpoints['arxiv']
 
         base_url = 'http://export.arxiv.org/api/query?search_query='
         params = '&sortBy=lastUpdatedDate&sortOrder=descending'
@@ -278,6 +296,9 @@ class ScrapeIt:
             If an error occurs or checkpoint is first item, returns None."""
         print('Scraping littlewhitelies', end='')
 
+        if not checkpoint:
+            checkpoint = self.checkpoints['lwl']
+
         res = requests.get('https://lwlies.com/reviews/')
 
         if res.status_code != 200:
@@ -319,6 +340,10 @@ class ScrapeIt:
         """Get complete review details from rogerebert.com.
         Checkpoints are review titles."""
         print('Scraping rogerebert', end='')
+
+        if not checkpoint:
+            checkpoint = self.checkpoints['rogerebert']
+
         reviews = self._collect_ebert_reviews(checkpoint=checkpoint)
 
         for review in reviews:
@@ -423,8 +448,10 @@ class ScrapeIt:
         List[dict] | None
             A list of dicts, each containing details of a review.
             If an error occurs or checkpoint is first item, returns None."""
-
         print('Scraping hollywoodreporter', end='')
+
+        if not checkpoint:
+            checkpoint = self.checkpoints['hollywood_reporter']
 
         url = 'https://www.hollywoodreporter.com/c/movies/movie-reviews/'
 
@@ -474,8 +501,10 @@ class ScrapeIt:
         List[dict] | None
             A list of dicts, each containing details of a review.
             If an error occurs or checkpoint is first item, returns None."""
-
         print('Scraping npr books', end='')
+
+        if not checkpoint:
+            checkpoint = self.checkpoints['npr_books']
 
         url = 'https://www.npr.org/sections/book-reviews/'
 
@@ -523,8 +552,10 @@ class ScrapeIt:
         List[dict] | None
             A list of dicts, each containing details of a review.
             If an error occurs or checkpoint is first item, returns None."""
-
         print('Scraping nyt books', end='')
+
+        if not checkpoint:
+            checkpoint = self.checkpoints['nyt_books']
 
         url = 'https://www.nytimes.com/section/books/review'
         base_url = 'https://www.nytimes.com'

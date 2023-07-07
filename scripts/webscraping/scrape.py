@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from scrapers import ScrapeIt
 
+DEFAULT_CHECKPOINT_PATH = 'checkpoints.json'
+
 
 def write_csv(stem, articles):
     """Write a collection of articles to a timestamped csv."""
@@ -19,7 +21,6 @@ def write_csv(stem, articles):
             writer.writerow(row)
 
 parser = argparse.ArgumentParser()
-scraper = ScrapeIt()
 
 parser.add_argument(
     'mode',
@@ -38,18 +39,25 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-print(args)
+checkpoint_path = Path(args.checkpoint)
 
-if args.checkpoint:
+if checkpoint_path.exists():
     checkpoint_path = Path(args.checkpoint)
     with open(checkpoint_path, 'r') as fp:
         checkpoints = json.load(fp)
-    print(checkpoints)
+    scraper = ScrapeIt(checkpoints)
+else:
+    checkpoint_path = DEFAULT_CHECKPOINT_PATH
+    scraper = ScrapeIt()
+
+new_checkpoints = {}
 
 if args.mode == 'all':
     # TODO
     arxiv = scraper.arxiv()
-    write_csv('arxiv', arxiv)
+    if arxiv:
+        write_csv('arxiv', arxiv)
+        new_checkpoints['arxiv'] = arxiv[0]['url']
 elif args.mode == 'fast':
     # TODO
     pass
@@ -59,3 +67,7 @@ elif args.mode == 'fastest':
 else:
     print('Argument \'mode\' must be \'all\', \'fast\', or \'fastest\'.')
     raise SystemExit(22)
+
+
+with open(checkpoint_path, 'w') as fp:
+    json.dump(new_checkpoints, fp)
