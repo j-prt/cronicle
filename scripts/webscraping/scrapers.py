@@ -101,6 +101,7 @@ class ScrapeIt:
                 for entry in feed.entries:
                     # Early stopping condition
                     if entry.link == checkpoint:
+                        print('')
                         return entries or None
                     # Build a dict from entry details
                     entries.append({
@@ -125,6 +126,7 @@ class ScrapeIt:
         post_data = self._collect_hn_post_data(num_pages=num_pages)
 
         if not post_data:
+            print('')
             return None
 
         for post in post_data:
@@ -321,6 +323,7 @@ class ScrapeIt:
             post_dict['blurb'] = post.find('p', class_='excerpt').get_text()
 
             if post_dict['url'] == checkpoint:
+                print('.')
                 return articles_list or None
 
             score_types = ['anticipation', 'enjoyment', 'retrospect']
@@ -350,6 +353,7 @@ class ScrapeIt:
         reviews = self._collect_ebert_reviews(checkpoint=checkpoint)
 
         if not reviews:
+            print('')
             return None
 
         for review in reviews:
@@ -483,6 +487,7 @@ class ScrapeIt:
             details['author'] = review.find('div', class_='c-tagline').get_text(strip=True)
 
             if details['url'] == checkpoint:
+                print('')
                 return reviews_list or None
 
             reviews_list.append(details)
@@ -534,6 +539,7 @@ class ScrapeIt:
             details['blurb'] = review.find('div', class_='item-info').find('p').get_text(strip=True).split('•')[1]
 
             if details['url'] == checkpoint:
+                print('')
                 return article_list or None
 
             article_list.append(details)
@@ -591,6 +597,7 @@ class ScrapeIt:
             details['blurb'] = review.find('p').get_text(strip=True)
 
             if details['url'] == checkpoint:
+                print('')
                 return article_list or None
 
             article_list.append(details)

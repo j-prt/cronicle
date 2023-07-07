@@ -59,9 +59,9 @@ if args.mode == 'all':
     if arxiv:
         write_csv('arxiv', arxiv)
         checkpoints['arxiv'] = arxiv[0]['url']
-    hackernews = scraper.hackernews()
-    if hackernews:
-        write_csv('hackernews', hackernews)
+    # hackernews = scraper.hackernews()
+    # if hackernews:
+    #     write_csv('hackernews', hackernews)
     techmeme = scraper.techmeme()
     if techmeme:
         write_csv('techmeme', techmeme)
