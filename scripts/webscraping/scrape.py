@@ -21,6 +21,7 @@ def write_csv(stem, articles):
         for row in articles:
             writer.writerow(row)
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     'mode',
@@ -55,13 +56,15 @@ else:
 
 
 if args.mode == 'all':
+    # Scrape every site sequentially, updating checkpoints and
+    # writing new csv files
     arxiv = scraper.arxiv()
     if arxiv:
         write_csv('arxiv', arxiv)
         checkpoints['arxiv'] = arxiv[0]['url']
-    # hackernews = scraper.hackernews()
-    # if hackernews:
-    #     write_csv('hackernews', hackernews)
+    hackernews = scraper.hackernews()
+    if hackernews:
+        write_csv('hackernews', hackernews)
     techmeme = scraper.techmeme()
     if techmeme:
         write_csv('techmeme', techmeme)
@@ -87,6 +90,7 @@ if args.mode == 'all':
         checkpoints['nyt_books'] = nyt_books[0]['url']
 
 elif args.mode == 'fast':
+    # Scrape somewhat frequently updated sites
     arxiv = scraper.arxiv()
     if arxiv:
         write_csv('arxiv', arxiv)
@@ -99,6 +103,7 @@ elif args.mode == 'fast':
         write_csv('techmeme', techmeme)
 
 elif args.mode == 'fastest':
+    # Scrape the most frequently updated sites
     hackernews = scraper.hackernews()
     if hackernews:
         write_csv('hackernews', hackernews)

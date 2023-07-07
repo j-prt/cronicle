@@ -323,7 +323,7 @@ class ScrapeIt:
             post_dict['blurb'] = post.find('p', class_='excerpt').get_text()
 
             if post_dict['url'] == checkpoint:
-                print('.')
+                print('')
                 return articles_list or None
 
             score_types = ['anticipation', 'enjoyment', 'retrospect']
