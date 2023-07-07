@@ -13,6 +13,7 @@ import requests
 import feedparser
 import time
 import re
+import sys
 from bs4 import BeautifulSoup
 
 CRAWL_DELAY = 5
@@ -32,10 +33,16 @@ class ScrapeIt:
 
     ##### ARXIV #####
 
-    def arxiv(self, cats, limit=50, checkpoint=None):
+    def arxiv(
+            self,
+            cats=['cs.*', 'econ.*', 'stat.ML'],
+            limit=50,
+            checkpoint=None
+        ):
         """Collect arXiv papers by category using feedparser.
         Example categories: ['cs.*', 'econ.*', 'stat.ML']
         Reference for category names: https://arxiv.org/category_taxonomy
+        Checkpoints are URLs.
 
         Params
         ----------
@@ -51,9 +58,10 @@ class ScrapeIt:
 
         Returns
         ----------
-        Tuple[list, str] : (List of dicts, checkpoint)
-            Each dict refers to a paper. Checkpoint is the url from the most
-            recent paper retrieved."""
+        List[dict]
+            Each dict refers to a paper."""
+
+        print('Scraping arxiv', end='')
 
         base_url = 'http://export.arxiv.org/api/query?search_query='
         params = '&sortBy=lastUpdatedDate&sortOrder=descending'
@@ -64,7 +72,6 @@ class ScrapeIt:
         start = 0
         page_size = 10
         entries = []
-        new_checkpoint = checkpoint
 
         for i in range(start, limit, page_size):
             feed = feedparser.parse(
@@ -76,7 +83,7 @@ class ScrapeIt:
                 for entry in feed.entries:
                     # Early stopping condition
                     if entry.link == checkpoint:
-                        return entries, new_checkpoint
+                        return entries or None
                     # Build a dict from entry details
                     entries.append({
                         'title': entry.title_detail.value,
@@ -85,13 +92,10 @@ class ScrapeIt:
                         'url': entry.link,
                         'category': entry.arxiv_primary_category['term']
                     })
-                # Set a new checkpoint after first successful update
-                if new_checkpoint == checkpoint:
-                    new_checkpoint = entries[0]['url']
-
+            print('.', end='')
             time.sleep(self.crawl_delay)
-
-        return entries, new_checkpoint
+        print('')
+        return entries
 
 
     ##### HACKERNEWS #####
@@ -99,13 +103,16 @@ class ScrapeIt:
     def hackernews(self, num_pages=1, max_comments=50):
         """Collect data on posts, including comments,
         from the front page(s) of HackerNews"""
+        print('Scraping hackernews', end='')
         post_data = self._collect_hn_post_data(num_pages=num_pages)
         for post in post_data:
             post['comments'] = self._collect_hn_comments(
                 post['url'],
                 max_comments=max_comments
             )
+            print('.', end='')
             time.sleep(self.crawl_delay)
+        print('')
         return post_data
 
 
@@ -154,7 +161,6 @@ class ScrapeIt:
                     post_data['url'] = post_url + re.search(r'id=[0-9]+', link)[0]
 
                 post_detail_url = detail_url + post.next_sibling.find_all('a')[-1]['href']
-                print(post_detail_url, detail_url)
                 post_data['detail_url'] = post_detail_url
 
                 subtitle = post.next_sibling.text.split()
@@ -220,6 +226,7 @@ class ScrapeIt:
             A list of dicts, each containing details of a Techmeme post.
             If an error occurs, returns None."""
 
+        print('Scraping techmeme', end='')
         if mode == 'all':
             cap = 999
         elif mode == 'most':
@@ -241,17 +248,14 @@ class ScrapeIt:
         soup = BeautifulSoup(res.content)
         all_articles = soup.find_all('a', class_='ourh')
 
-        for i, article in enumerate(all_articles):
+        for article in all_articles[:cap]:
             post = {}
 
             post['title'] = article.get_text(strip=True)
             post['url'] = article.get('href', 0)
 
             articles.append(post)
-
-            if i >= cap:
-                break
-
+        print('.')
         return articles
 
 
@@ -260,6 +264,7 @@ class ScrapeIt:
 
     def lwl(self, checkpoint=None):
         """Collect data on reviews from the littlewhitelies movie blog.
+        Checkpoints are article titles.
 
         Params
         ----------
@@ -271,7 +276,7 @@ class ScrapeIt:
         List[dict] | None
             A list of dicts, each containing details of a review.
             If an error occurs or checkpoint is first item, returns None."""
-
+        print('Scraping littlewhitelies', end='')
 
         res = requests.get('https://lwlies.com/reviews/')
 
@@ -304,21 +309,25 @@ class ScrapeIt:
 
 
             articles_list.append(post_dict)
-
+        print('.')
         return articles_list
 
 
     ##### ROGEREBERT #####
 
     def rogerebert(self, checkpoint=None):
-        """Get complete review details from rogerebert.com."""
+        """Get complete review details from rogerebert.com.
+        Checkpoints are review titles."""
+        print('Scraping rogerebert', end='')
         reviews = self._collect_ebert_reviews(checkpoint=checkpoint)
 
         for review in reviews:
             details = self._collect_ebert_review_details(review['url'])
             review.update(**details)
+            print('.', end='')
             time.sleep(self.crawl_delay)
 
+        print('')
         return reviews
 
     def _collect_ebert_reviews(self, checkpoint=None):
@@ -397,25 +406,26 @@ class ScrapeIt:
 
         return details
 
-    def compile_reviews_details(self, movie_list):
-        """Create complete reviews for movies."""
+    # def compile_reviews_details(self, movie_list):
+    #     """Create complete reviews for movies."""
 
-        compiled_reviews = []
+    #     compiled_reviews = []
 
-        for review_stub in movie_list:
-            details = self.collect_ebert_review_details(review_stub['url'])
-            review_stub.update(details)
-            compiled_reviews.append(review_stub)
+    #     for review_stub in movie_list:
+    #         details = self.collect_ebert_review_details(review_stub['url'])
+    #         review_stub.update(details)
+    #         compiled_reviews.append(review_stub)
 
-            time.sleep(self.crawl_delay)
+    #         time.sleep(self.crawl_delay)
 
-        return compiled_reviews
+    #     return compiled_reviews
 
 
     ##### HOLLYWOOD REPORTER #####
 
     def hollywood_reporter(self, checkpoint=None):
         """Collect data on reviews from the hollywood reporter movie blog.
+        Checkpoints are review titles.
 
         Params
         ----------
@@ -427,6 +437,8 @@ class ScrapeIt:
         List[dict] | None
             A list of dicts, each containing details of a review.
             If an error occurs or checkpoint is first item, returns None."""
+
+        print('Scraping hollywoodreporter', end='')
 
         url = 'https://www.hollywoodreporter.com/c/movies/movie-reviews/'
 
@@ -456,6 +468,7 @@ class ScrapeIt:
 
             reviews_list.append(details)
 
+        print('.')
         return reviews_list
 
 
@@ -463,6 +476,7 @@ class ScrapeIt:
 
     def npr_books(self, checkpoint=None):
         """Collect data on reviews from the npr book reviews page.
+        Checkpoints are article titles.
 
         Params
         ----------
@@ -474,6 +488,8 @@ class ScrapeIt:
         List[dict] | None
             A list of dicts, each containing details of a review.
             If an error occurs or checkpoint is first item, returns None."""
+
+        print('Scraping npr books', end='')
 
         url = 'https://www.npr.org/sections/book-reviews/'
 
@@ -500,6 +516,7 @@ class ScrapeIt:
 
             article_list.append(details)
 
+        print('.')
         return article_list
 
 
@@ -508,6 +525,7 @@ class ScrapeIt:
 
     def nyt_books(self, checkpoint=None):
         """Collect data on reviews from the nyt book reviews page.
+        Checkpoints are article titles.
 
         Params
         ----------
@@ -519,6 +537,8 @@ class ScrapeIt:
         List[dict] | None
             A list of dicts, each containing details of a review.
             If an error occurs or checkpoint is first item, returns None."""
+
+        print('Scraping nyt books', end='')
 
         url = 'https://www.nytimes.com/section/books/review'
         base_url = 'https://www.nytimes.com'
@@ -550,4 +570,5 @@ class ScrapeIt:
 
             article_list.append(details)
 
+        print('.')
         return article_list
