@@ -107,7 +107,7 @@ class ScrapeIt:
         post_data = self._collect_hn_post_data(num_pages=num_pages)
         for post in post_data:
             post['comments'] = self._collect_hn_comments(
-                post['url'],
+                post['detail_url'],
                 max_comments=max_comments
             )
             print('.', end='')
@@ -145,7 +145,7 @@ class ScrapeIt:
             if page.status_code != 200:
                 return posts
 
-            soup = BeautifulSoup(page.content)
+            soup = BeautifulSoup(page.content, 'html.parser')
             all_posts = soup.find_all('tr', class_='athing')
 
             for post in all_posts:
@@ -199,7 +199,7 @@ class ScrapeIt:
         if page.status_code != 200:
             return None
 
-        soup = BeautifulSoup(page.content)
+        soup = BeautifulSoup(page.content, 'html.parser')
 
         comments_list = []
 
@@ -245,7 +245,7 @@ class ScrapeIt:
 
         articles = []
 
-        soup = BeautifulSoup(res.content)
+        soup = BeautifulSoup(res.content, 'html.parser')
         all_articles = soup.find_all('a', class_='ourh')
 
         for article in all_articles[:cap]:
@@ -283,7 +283,7 @@ class ScrapeIt:
         if res.status_code != 200:
             return None
 
-        lwl_rev = BeautifulSoup(res.content)
+        lwl_rev = BeautifulSoup(res.content, 'html.parser')
         articles_list = []
         posts = lwl_rev.find_all('div', class_='postBlock')
 
@@ -344,7 +344,7 @@ class ScrapeIt:
         if res.status_code != 200:
             return None
 
-        soup = BeautifulSoup(res.content)
+        soup = BeautifulSoup(res.content, 'html.parser')
         reviews = soup.find_all('div', class_='review-stack')
 
         review_list = []
@@ -386,7 +386,7 @@ class ScrapeIt:
         if res.status_code != 200:
             return None
 
-        soup = BeautifulSoup(res.content)
+        soup = BeautifulSoup(res.content, 'html.parser')
 
         details = {}
 
@@ -405,20 +405,6 @@ class ScrapeIt:
         details['tags'] = tag_list
 
         return details
-
-    # def compile_reviews_details(self, movie_list):
-    #     """Create complete reviews for movies."""
-
-    #     compiled_reviews = []
-
-    #     for review_stub in movie_list:
-    #         details = self.collect_ebert_review_details(review_stub['url'])
-    #         review_stub.update(details)
-    #         compiled_reviews.append(review_stub)
-
-    #         time.sleep(self.crawl_delay)
-
-    #     return compiled_reviews
 
 
     ##### HOLLYWOOD REPORTER #####
@@ -450,7 +436,7 @@ class ScrapeIt:
         if res.status_code != 200:
             return None
 
-        soup = BeautifulSoup(res.content)
+        soup = BeautifulSoup(res.content, 'html.parser')
         reviews = soup.find_all('div', class_='story')
 
         reviews_list = []
@@ -501,7 +487,7 @@ class ScrapeIt:
         if res.status_code != 200:
             return None
 
-        soup = BeautifulSoup(res.content)
+        soup = BeautifulSoup(res.content, 'html.parser')
         article_list = []
         reviews = soup.find_all('article', class_='item has-image')
 
@@ -512,7 +498,7 @@ class ScrapeIt:
             if title == checkpoint:
                 return article_list or None
             details['url'] = review.find('a').get('href')
-            details['blurb'] = review.find('p').get_text(strip=True).split('\x95')[1]
+            details['blurb'] = review.find('div', class_='item-info').find('p').get_text(strip=True).split('•')[1]
 
             article_list.append(details)
 
@@ -551,7 +537,7 @@ class ScrapeIt:
         if res.status_code != 200:
             return None
 
-        soup = BeautifulSoup(res.content)
+        soup = BeautifulSoup(res.content, 'html.parser')
         article_list = []
         reviews = soup.find('section', id='stream-panel').select('li a')
 
