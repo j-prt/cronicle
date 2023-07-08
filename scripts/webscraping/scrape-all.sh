@@ -7,6 +7,7 @@ python3 scrape.py all
 
 gcloud auth login --cred-file=$CRED_FILE
 gcloud storage cp --recursive ./*.csv $ARTICLE_BUCKET
+gcloud auth revoke --all
 
 sudo mkdir -p ~/Desktop/archive/articles/$(date +%s)
 sudo mv ./*.csv $_
