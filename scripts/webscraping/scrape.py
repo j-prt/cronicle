@@ -8,7 +8,7 @@ from scrapers import ScrapeIt
 
 
 DEFAULT_CHECKPOINT_PATH = 'checkpoints.json'
-NOW = datetime.now(timezone.utc).strftime('%Y%M%d%H%M')
+NOW = datetime.now(timezone.utc).strftime('%Y%m%d%H%M')
 
 
 def write_csv(stem, articles):
