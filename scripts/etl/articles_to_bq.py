@@ -13,7 +13,6 @@ from apache_beam.io.gcp.bigquery_tools import parse_table_schema_from_json
 # Used for holding the dictionary keys
 table_keys = []
 
-
 def read_csv_file(file):
     with beam.io.filesystems.FileSystems.open(file) as gcs_file:
         reader = csv.reader(io.TextIOWrapper(gcs_file))
@@ -22,6 +21,7 @@ def read_csv_file(file):
         table_keys.extend(next(reader))
         for row in reader:
             yield row
+
 
 # Read the schema file into bq format
 with open('schema_arxiv.json', 'r') as f:
@@ -50,13 +50,21 @@ def run(argv=None):
     # (to be used for pipeline options) as pipeline_args
     known_args, pipeline_args = parser.parse_known_args(argv)
 
-
     p = beam.Pipeline(options=PipelineOptions(pipeline_args))
     (p
          | 'Load url' >> beam.Create([known_args.input])
          | 'Read csv' >> beam.FlatMap(read_csv_file)
          | 'Convert to dict' >> beam.Map(lambda row: dict(zip(table_keys, row)))
-         | 'String to text file' >> beam.io.WriteToText(known_args.output, file_name_suffix='.txt')
+        #  | 'String to text file' >> beam.io.WriteToText(known_args.output, file_name_suffix='.txt')
+         | 'Write to bigquery' >> beam.io.WriteToBigQuery(
+               table='test_arxiv_0',
+               dataset='arxiv_0',
+               project='article-source',
+               schema=schema,
+               create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+               write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+               custom_gcs_temp_location='gs://pb-datalake'
+           )
     )
     p.run().wait_until_finish()
 
