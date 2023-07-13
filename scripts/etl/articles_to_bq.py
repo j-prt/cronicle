@@ -10,22 +10,35 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.io.gcp.bigquery_tools import parse_table_schema_from_json
 
 schema_file = 'schemas.json'
-# Used for holding the dictionary keys
+
+
 class DataPreparation:
+    """Utility class for data transformations"""
+
+    # Used for holding dictionary keys (field names). Set as
+    # a class attribute because the individual instance state doesn't
+    # seem to be preserved during pipeline execution
     table_keys = []
 
     def read_csv_file(self, file):
+        """Function for reading csv files. Used instead of
+        the builtin beam csv reader due to newlines in fields."""
+
         with beam.io.filesystems.FileSystems.open(file) as gcs_file:
             reader = csv.reader(io.TextIOWrapper(gcs_file))
 
             # Get keys from header
             table_keys = next(reader)+['create_time']
             DataPreparation.table_keys.extend(table_keys)
+
+            # Read in the rows
             for row in reader:
                 yield row
 
     def get_schema(self, schema_file, source_site):
-        # Read the schema file into bq format
+        """Function for getting the appropriate schema for the
+        supplied csv file, based on the filename."""
+
         with open(schema_file, 'r') as f:
             all_schemas = json.load(f)
             target_schema = json.dumps(all_schemas[source_site])
@@ -33,6 +46,8 @@ class DataPreparation:
         return schema
 
     def parse_filename(self, filename):
+        """Function for both getting the article source name (to
+        match schemas) as well as parsing datetimes to bq format."""
         filename = filename.split('/')[-1]
         source_site = filename.split('-')[0]
         timestamp = filename.split('-')[1].split('.')[0]
@@ -85,11 +100,9 @@ def run(argv=None):
     (p
          | 'Load url' >> beam.Create([known_args.input])
          | 'Read csv' >> beam.FlatMap(lambda f: dataprep.read_csv_file(f))
-        #  | 'Test write' >> beam.io.WriteToText('fasdfa', '.txt')
          | 'Convert to dict' >> beam.Map(
                lambda row: dict(zip(DataPreparation.table_keys, row+[timestamp]))
            )
-        #  | 'Test write' >> beam.io.WriteToText('fasdfa', '.txt')
          | 'Write to bigquery' >> beam.io.WriteToBigQuery(
                table='test_arxiv_4',
                dataset='arxiv_0',
