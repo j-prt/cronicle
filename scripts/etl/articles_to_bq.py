@@ -66,13 +66,19 @@ class DataPreparation:
         return source_site, timestamp
 
     def row_to_dict(self, row, keys, source_site, timestamp):
-        """Function for dealing with corner case: hackernews
-        comments need to be uploaded as repeated arrays in bq."""
+        """Function for dealing with corner cases: where
+        fields need to be uploaded as repeated arrays in bq."""
 
         if source_site == 'hackernews':
             comments = ast.literal_eval(row.pop())
             comments = [{'comment':item} for item in comments]
             return dict(zip(keys, row+[comments]+[timestamp]))
+
+        if source_site == 'rogerebert':
+            tags = ast.literal_eval(row.pop())
+            tags = [{'comment':item} for item in tags]
+            return dict(zip(keys, row+[tags]+[timestamp]))
+
         # Simple case (no repeated fields)
         return dict(zip(keys, row+[timestamp]))
 
@@ -87,7 +93,7 @@ def run(argv=None):
         required=False,
         help='Input file to read. This can be a local file or '
         'a file in a Google Storage Bucket.',
-        default='articles_hackernews-202307140705.csv'
+        default='articles_techmeme-202307140705.csv'
     )
     parser.add_argument(
         '--output',
@@ -122,7 +128,7 @@ def run(argv=None):
                )
            )
          | 'Write to bigquery' >> beam.io.WriteToBigQuery(
-               table='test_hackernews_1',
+               table='test_techmeme',
                dataset='arxiv_0',
                project='article-source',
                schema=schema,
