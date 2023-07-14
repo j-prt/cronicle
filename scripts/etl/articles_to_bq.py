@@ -1,6 +1,7 @@
 import argparse
 import logging
 import json
+import ast
 import csv
 import io
 
@@ -48,7 +49,8 @@ class DataPreparation:
     def parse_filename(self, filename):
         """Function for both getting the article source name (to
         match schemas) as well as parsing datetimes to bq format."""
-        filename = filename.split('/')[-1]
+
+        filename = filename.split('_')[-1]
         source_site = filename.split('-')[0]
         timestamp = filename.split('-')[1].split('.')[0]
         timestamp = (
@@ -63,6 +65,17 @@ class DataPreparation:
         )
         return source_site, timestamp
 
+    def row_to_dict(self, row, keys, source_site, timestamp):
+        """Function for dealing with corner case: hackernews
+        comments need to be uploaded as repeated arrays in bq."""
+
+        if source_site == 'hackernews':
+            comments = ast.literal_eval(row.pop())
+            comments = [{'comment':item} for item in comments]
+            return dict(zip(keys, row+[comments]+[timestamp]))
+        # Simple case (no repeated fields)
+        return dict(zip(keys, row+[timestamp]))
+
 
 def run(argv=None):
     """The main function which creates the pipeline and runs it."""
@@ -74,7 +87,7 @@ def run(argv=None):
         required=False,
         help='Input file to read. This can be a local file or '
         'a file in a Google Storage Bucket.',
-        default='gs://pb-datalake/articles/arxiv-202306080106.csv'
+        default='articles_hackernews-202307140705.csv'
     )
     parser.add_argument(
         '--output',
@@ -101,10 +114,15 @@ def run(argv=None):
          | 'Load url' >> beam.Create([known_args.input])
          | 'Read csv' >> beam.FlatMap(lambda f: dataprep.read_csv_file(f))
          | 'Convert to dict' >> beam.Map(
-               lambda row: dict(zip(DataPreparation.table_keys, row+[timestamp]))
+               lambda row: dataprep.row_to_dict(
+                   row,
+                   DataPreparation.table_keys,
+                   source_site,
+                   timestamp
+               )
            )
          | 'Write to bigquery' >> beam.io.WriteToBigQuery(
-               table='test_arxiv_4',
+               table='test_hackernews_1',
                dataset='arxiv_0',
                project='article-source',
                schema=schema,
