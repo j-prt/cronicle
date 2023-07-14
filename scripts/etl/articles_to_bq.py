@@ -76,7 +76,7 @@ class DataPreparation:
 
         if source_site == 'rogerebert':
             tags = ast.literal_eval(row.pop())
-            tags = [{'comment':item} for item in tags]
+            tags = [{'tag':item} for item in tags]
             return dict(zip(keys, row+[tags]+[timestamp]))
 
         # Simple case (no repeated fields)
@@ -93,7 +93,7 @@ def run(argv=None):
         required=False,
         help='Input file to read. This can be a local file or '
         'a file in a Google Storage Bucket.',
-        default='articles_techmeme-202307140705.csv'
+        default='articles_rogerebert-202307141305.csv'
     )
     parser.add_argument(
         '--output',
@@ -128,7 +128,7 @@ def run(argv=None):
                )
            )
          | 'Write to bigquery' >> beam.io.WriteToBigQuery(
-               table='test_techmeme',
+               table='test_roger_3',
                dataset='arxiv_0',
                project='article-source',
                schema=schema,
