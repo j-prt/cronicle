@@ -3,12 +3,18 @@ import logging
 import json
 import ast
 import csv
+import os
 import io
 
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.io.gcp.bigquery_tools import parse_table_schema_from_json
+
+CLOUD_PROJECT=os.environ['CLOUD_PROJECT']
+TEMP_LOCATION=os.environ['TEMP_LOCATION']
+DATASET=os.environ['DATASET']
+TABLE=os.environ['TABLE']
 
 schema_file = 'schemas.json'
 
@@ -128,13 +134,13 @@ def run(argv=None):
                )
            )
          | 'Write to bigquery' >> beam.io.WriteToBigQuery(
-               table='test_roger_3',
-               dataset='arxiv_0',
-               project='article-source',
+               table=TABLE,
+               dataset=DATASET,
+               project=CLOUD_PROJECT,
                schema=schema,
                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-               custom_gcs_temp_location='gs://pb-datalake'
+               custom_gcs_temp_location=TEMP_LOCATION
            )
     )
     p.run().wait_until_finish()
