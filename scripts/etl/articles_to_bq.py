@@ -15,8 +15,7 @@ CLOUD_PROJECT=os.environ['CLOUD_PROJECT']
 TEMP_LOCATION=os.environ['TEMP_LOCATION']
 DATASET=os.environ['DATASET']
 TABLE=os.environ['TABLE']
-
-schema_file = 'schemas.json'
+SCHEMA_FILE=os.environ['SCHEMA_FILE']
 
 
 class DataPreparation:
@@ -30,6 +29,9 @@ class DataPreparation:
     def read_csv_file(self, file):
         """Function for reading csv files. Used instead of
         the builtin beam csv reader due to newlines in fields."""
+        import apache_beam as beam
+        import csv
+        import io
 
         with beam.io.filesystems.FileSystems.open(file) as gcs_file:
             reader = csv.reader(io.TextIOWrapper(gcs_file))
@@ -45,8 +47,10 @@ class DataPreparation:
     def get_schema(self, schema_file, source_site):
         """Function for getting the appropriate schema for the
         supplied csv file, based on the filename."""
+        import apache_beam as beam
+        import json
 
-        with open(schema_file, 'r') as f:
+        with beam.io.filesystems.FileSystems.open(schema_file) as f:
             all_schemas = json.load(f)
             target_schema = json.dumps(all_schemas[source_site])
             schema = parse_table_schema_from_json(target_schema)
@@ -56,7 +60,7 @@ class DataPreparation:
         """Function for both getting the article source name (to
         match schemas) as well as parsing datetimes to bq format."""
 
-        filename = filename.split('_')[-1]
+        filename = filename.split('/')[-1]
         source_site = filename.split('-')[0]
         timestamp = filename.split('-')[1].split('.')[0]
         timestamp = (
@@ -96,17 +100,8 @@ def run(argv=None):
     parser.add_argument(
         '--input',
         dest='input',
-        required=False,
-        help='Input file to read. This can be a local file or '
-        'a file in a Google Storage Bucket.',
-        default='articles_rogerebert-202307141305.csv'
-    )
-    parser.add_argument(
-        '--output',
-        dest='output',
-        required=False,
-        help='Output title',
-        default='test'
+        required=True,
+        help='Input article from the GCS bucket.',
     )
 
     # Collect argparse args as known_args, other args
@@ -118,10 +113,17 @@ def run(argv=None):
     dataprep = DataPreparation()
 
     source_site, timestamp = dataprep.parse_filename(known_args.input)
-    schema = dataprep.get_schema(schema_file, source_site)
-    print(source_site, timestamp)
+    schema = dataprep.get_schema(SCHEMA_FILE, source_site)
+    print(schema)
 
-    p = beam.Pipeline(options=PipelineOptions(pipeline_args))
+    options = PipelineOptions(
+        pipeline_args,
+        region= 'us-west3',
+        project=CLOUD_PROJECT,
+        temp_location=TEMP_LOCATION,
+    )
+
+    p = beam.Pipeline(options=options)
     (p
          | 'Load url' >> beam.Create([known_args.input])
          | 'Read csv' >> beam.FlatMap(lambda f: dataprep.read_csv_file(f))
@@ -136,11 +138,9 @@ def run(argv=None):
          | 'Write to bigquery' >> beam.io.WriteToBigQuery(
                table=TABLE,
                dataset=DATASET,
-               project=CLOUD_PROJECT,
                schema=schema,
                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-               custom_gcs_temp_location=TEMP_LOCATION
            )
     )
     p.run().wait_until_finish()
