@@ -11,6 +11,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.io.gcp.bigquery_tools import parse_table_schema_from_json
 
+
 CLOUD_PROJECT=os.environ['CLOUD_PROJECT']
 TEMP_LOCATION=os.environ['TEMP_LOCATION']
 DATASET=os.environ['DATASET']
@@ -78,6 +79,7 @@ class DataPreparation:
     def row_to_dict(self, row, keys, source_site, timestamp):
         """Function for dealing with corner cases: where
         fields need to be uploaded as repeated arrays in bq."""
+        import ast
 
         if source_site == 'hackernews':
             comments = ast.literal_eval(row.pop())
@@ -114,7 +116,6 @@ def run(argv=None):
 
     source_site, timestamp = dataprep.parse_filename(known_args.input)
     schema = dataprep.get_schema(SCHEMA_FILE, source_site)
-    print(schema)
 
     options = PipelineOptions(
         pipeline_args,
