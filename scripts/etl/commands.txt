@@ -1,0 +1,26 @@
+CLI commands:
+
+RUN
+gcloud dataflow flex-template run "<job name>" \
+--parameters input=<input file> \
+--template-file-gcs-location "$BUCKET/templates/<template name>" \
+--parameters dataset=$DATASET \
+--parameters table=$TABLE \
+--parameters schema_file=$SCHEMA_FILE \
+--region us-west3
+
+CREATE TEMPLATE
+gcloud dataflow flex-template build $BUCKET/templates/<template name> \
+--image-gcr-path "us-west3-docker.pkg.dev/$CLOUD_PROJECT/<image repo>/dataflow/<image name>" \
+--sdk-language "PYTHON" \
+--flex-template-base-image "PYTHON3" \
+--metadata-file "metadata.json" \
+--py-path "." \
+--env "FLEX_TEMPLATE_PYTHON_REQUIREMENTS_FILE=requirements.txt" \
+--env "FLEX_TEMPLATE_PYTHON_PY_FILE=articles_df_flex.py" \
+--env "FLEX_TEMPLATE_PYTHON_SETUP_FILE=setup.py"
+
+BUILD IMAGE
+gcloud builds submit --tag "$TEMPLATE_IMAGE" .
+
+TEMPLATE_IMAGE = gcr.io/<project id>/dataflow/<image name>:latest
