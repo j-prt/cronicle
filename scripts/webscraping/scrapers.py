@@ -173,25 +173,26 @@ class ScrapeIt:
             all_posts = soup.find_all('tr', class_='athing')
 
             for post in all_posts:
-                post_data = {}
+                try:
+                    post_data = {}
 
-                title = post.find_all('a')[-2]
-                post_data['title'] = title.get_text(strip=True)
+                    title = post.find_all('a')[-2]
+                    post_data['title'] = title.get_text(strip=True)
+                    link = title['href']
+                    if link.startswith('http'):
+                        post_data['url'] = link
+                    else:
+                        post_data['url'] = post_url + re.search(r'id=[0-9]+', link)[0]
 
-                link = title['href']
-                if link.startswith('http'):
-                    post_data['url'] = link
-                else:
-                    post_data['url'] = post_url + re.search(r'id=[0-9]+', link)[0]
+                    post_detail_url = detail_url + post.next_sibling.find_all('a')[-1]['href']
+                    post_data['detail_url'] = post_detail_url
+                    subtitle = post.next_sibling.text.split()
+                    post_data['points'] = int(subtitle[0])
+                    post_data['comments'] = int(subtitle[-2]) if subtitle[-2].isnumeric() else 0
 
-                post_detail_url = detail_url + post.next_sibling.find_all('a')[-1]['href']
-                post_data['detail_url'] = post_detail_url
-
-                subtitle = post.next_sibling.text.split()
-                post_data['points'] = int(subtitle[0])
-                post_data['comments'] = int(subtitle[-2]) if subtitle[-2].isnumeric() else 0
-
-                posts.append(post_data)
+                    posts.append(post_data)
+                except:
+                    return posts
 
                 if num_pages > 1:
                     time.sleep(self.crawl_delay)
@@ -261,7 +262,6 @@ class ScrapeIt:
         else:
             raise ValueError(f'Value for "mode" must be "all", "most", or "some". Not "{mode}".')
 
-
         url = 'https://www.techmeme.com/'
         res = requests.get(url)
 
@@ -316,27 +316,29 @@ class ScrapeIt:
         posts = lwl_rev.find_all('div', class_='postBlock')
 
         for post in posts:
-            post_dict = {}
+            try:
+                post_dict = {}
 
-            post_dict['title'] = post.find('h3').get_text()
-            post_dict['author'] = post.select_one('p a').get_text()
-            post_dict['url'] = post.find('a').get('href', None)
-            post_dict['blurb'] = post.find('p', class_='excerpt').get_text()
+                post_dict['title'] = post.find('h3').get_text()
+                post_dict['author'] = post.select_one('p a').get_text()
+                post_dict['url'] = post.find('a').get('href', None)
+                post_dict['blurb'] = post.find('p', class_='excerpt').get_text()
 
-            if post_dict['url'] == checkpoint:
-                print('')
+                if post_dict['url'] == checkpoint:
+                    print('')
+                    return articles_list or None
+
+                score_types = ['anticipation', 'enjoyment', 'retrospect']
+                marker = 0
+                scores = post.find_all('span')
+                for score in scores:
+                    if score.get('class', None) and score['class'][-1].startswith('icon-rating'):
+                        post_dict[score_types[marker]] = int(score['class'][-1][-1])
+                        marker += 1
+
+                articles_list.append(post_dict)
+            except:
                 return articles_list or None
-
-            score_types = ['anticipation', 'enjoyment', 'retrospect']
-            marker = 0
-            scores = post.find_all('span')
-            for score in scores:
-                if score.get('class', None) and score['class'][-1].startswith('icon-rating'):
-                    post_dict[score_types[marker]] = int(score['class'][-1][-1])
-                    marker += 1
-
-
-            articles_list.append(post_dict)
         print('.')
         return articles_list
 
@@ -386,28 +388,31 @@ class ScrapeIt:
         review_list = []
 
         for review in reviews:
-            review_data = {}
+            try:
+                review_data = {}
 
-            review_data['title'] = review.find('h5').get_text(strip=True)
-            review_data['author'] = review.find('h6').get_text(strip=True)
-            review_data['url'] = base_url + review.find('a').get('href')
+                review_data['title'] = review.find('h5').get_text(strip=True)
+                review_data['author'] = review.find('h6').get_text(strip=True)
+                review_data['url'] = base_url + review.find('a').get('href')
 
-            if review_data['url'] == checkpoint:
+                if review_data['url'] == checkpoint:
+                    return review_list or None
+
+                score_stars = review.find('span').find_all('i')
+                score = 0
+                for star in score_stars:
+                    if star.get('title') == 'star-full':
+                        score +=1
+                    elif star.get('title') == 'star-half':
+                        score +=.5
+
+                if score == 0:
+                    continue
+
+                review_data['score'] = score
+                review_list.append(review_data)
+            except:
                 return review_list or None
-
-            score_stars = review.find('span').find_all('i')
-            score = 0
-            for star in score_stars:
-                if star.get('title') == 'star-full':
-                    score +=1
-                elif star.get('title') == 'star-half':
-                    score +=.5
-
-            if score == 0:
-                continue
-
-            review_data['score'] = score
-            review_list.append(review_data)
 
         return review_list
 
@@ -429,7 +434,10 @@ class ScrapeIt:
         article = []
         text_blocks = soup.find_all('section', class_='page-content--block_editor-content')
         for block in text_blocks:
-            article.append(block.get_text(strip=True))
+            try:
+                article.append(block.get_text(strip=True))
+            except:
+                continue
 
         details['review_text'] = ' '.join(article)
 
@@ -480,18 +488,20 @@ class ScrapeIt:
         reviews_list = []
 
         for review in reviews:
-            details = {}
+            try:
+                details = {}
+                details['title'] = review.find('a').get_text(strip=True)
+                details['url'] = review.find('a').get('href')
+                details['blurb'] = review.find('p').get_text(strip=True)
+                details['author'] = review.find('div', class_='c-tagline').get_text(strip=True)
 
-            details['title'] = review.find('a').get_text(strip=True)
-            details['url'] = review.find('a').get('href')
-            details['blurb'] = review.find('p').get_text(strip=True)
-            details['author'] = review.find('div', class_='c-tagline').get_text(strip=True)
+                if details['url'] == checkpoint:
+                    print('')
+                    return reviews_list or None
 
-            if details['url'] == checkpoint:
-                print('')
+                reviews_list.append(details)
+            except:
                 return reviews_list or None
-
-            reviews_list.append(details)
 
         print('.')
         return reviews_list
@@ -533,17 +543,19 @@ class ScrapeIt:
         reviews = soup.find_all('article', class_='item has-image')
 
         for review in reviews:
-            details = {}
+            try:
+                details = {}
+                details['title'] = review.find('h2').get_text(strip=True)
+                details['url'] = review.find('a').get('href')
+                details['blurb'] = review.find('div', class_='item-info').find('p').get_text(strip=True).split('•')[1]
 
-            details['title'] = review.find('h2').get_text(strip=True)
-            details['url'] = review.find('a').get('href')
-            details['blurb'] = review.find('div', class_='item-info').find('p').get_text(strip=True).split('•')[1]
+                if details['url'] == checkpoint:
+                    print('')
+                    return article_list or None
 
-            if details['url'] == checkpoint:
-                print('')
+                article_list.append(details)
+            except:
                 return article_list or None
-
-            article_list.append(details)
 
         print('.')
         return article_list
@@ -587,23 +599,22 @@ class ScrapeIt:
         reviews = soup.find('section', id='stream-panel').select('li article')
 
         for review in reviews:
-            details = {}
-
             header = review.find('h3')
             if not header:
                 continue
             try:
+                details = {}
                 details['title'] = header.get_text(strip=True)
                 details['url'] = base_url+review.find('a').get('href')
                 details['blurb'] = review.find('p').get_text(strip=True)
+
+                if details['url'] == checkpoint:
+                    print('')
+                    return article_list or None
+
+                article_list.append(details)
             except:
                 article_list or None
-
-            if details['url'] == checkpoint:
-                print('')
-                return article_list or None
-
-            article_list.append(details)
 
         print('.')
         return article_list
