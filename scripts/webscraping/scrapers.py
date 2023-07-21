@@ -228,8 +228,9 @@ class ScrapeIt:
         comments_list = []
 
         for comm in soup.find_all('tr', class_='athing comtr')[:max_comments]:
-            comment = comm.find('span', class_='commtext').get_text(strip=True)
-            comments_list.append(comment)
+            comment = comm.find('span', class_='commtext')
+            if comment:
+                comments_list.append(comment.get_text(strip=True))
 
         return comments_list
 
@@ -583,7 +584,7 @@ class ScrapeIt:
 
         soup = BeautifulSoup(res.content, 'html.parser')
         article_list = []
-        reviews = soup.find('section', id='stream-panel').select('li a')
+        reviews = soup.find('section', id='stream-panel').select('li article')
 
         for review in reviews:
             details = {}
@@ -591,10 +592,12 @@ class ScrapeIt:
             header = review.find('h3')
             if not header:
                 continue
-
-            details['title'] = header.get_text(strip=True)
-            details['url'] = base_url + review.get('href')
-            details['blurb'] = review.find('p').get_text(strip=True)
+            try:
+                details['title'] = header.get_text(strip=True)
+                details['url'] = base_url+review.find('a').get('href')
+                details['blurb'] = review.find('p').get_text(strip=True)
+            except:
+                article_list or None
 
             if details['url'] == checkpoint:
                 print('')
