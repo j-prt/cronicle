@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, sans-serif">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding: 20px">
+          <h1>The Daily Cronicle</h1>
+          <p>Stay informed with the latest articles!</p>
+        </td>
+      </tr>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        {% for article_title, articles_list in all_articles.items() %}
+        <td style="padding: 20px">
+          <h2>{{ article_title }}</h2>
+          <ul>
+            {% for article in articles_list %}
+            <li><a href="{{ article.url }}">{{ article.title }}</a></li>
+            {% endfor %}
+          </ul>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>
