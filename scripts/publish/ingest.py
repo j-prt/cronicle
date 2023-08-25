@@ -1,26 +1,10 @@
+"""Functions for data ingestion and processing"""
+
 from google.cloud import bigquery
 import random
 from model_utils import rank_articles
 
-SITE_LIST = [
-    'arxiv',
-    'hackernews',
-    'techmeme',
-    'lwl',
-    'rogerebert',
-    'hollywood_reporter',
-    'npr_books',
-    'nyt_books',
-]
-TEST_SITES = [
-    'arxiv',
-    'hackernews',
-    'techmeme',
-]
-ARTICLE_COUNT = 5
-
-
-def _get_table_data(table):
+def get_table_data(table):
     client = bigquery.Client()
     if table == 'arxiv':
         opts = 'title, url, summary'
@@ -39,14 +23,20 @@ def _get_table_data(table):
     return rows
 
 
-def process_table(table):
-    rows = _get_table_data(table)
+def process_table(table, test_sites, article_count, batch_size, target_emotion):
+    rows = get_table_data(table)
     if not rows:
         print(f'No data for {table}.')
         return None
 
-    if table in TEST_SITES:
-        articles = process_table_test(table, rows)
+    if table in test_sites:
+        articles = process_table_ab(
+            table,
+            rows,
+            article_count,
+            batch_size,
+            target_emotion
+        )
 
     else:
         articles = [dict(row) for row in rows]
@@ -57,22 +47,28 @@ def process_table(table):
     return {table: articles}
 
 
-def process_table_test(table, rows):
+def process_table_ab(table, rows, article_count, batch_size, target_emotion):
     ab = round(random.random())
 
     if ab == 1:
         #### TODO ####
-        # Add some logging to indicate this was a test
+        # Add some logging to indicate this was the control
         print(f'Unranked articles for {table}')
-        articles = rows_ab_test(table)
+        articles = rows_control(table, article_count)
     else:
         print(f'Ranked articles for {table}')
-        articles = rank_articles(table, rows, article_count=ARTICLE_COUNT)
+        articles = rank_articles(
+            table,
+            rows,
+            article_count=article_count,
+            batch_size=batch_size,
+            target_emotion=target_emotion
+            )
 
     return {table: articles}
 
 
-def rows_ab_test(table):
+def rows_control(table, article_count):
     # Unpack the row iterator into a list
     articles = [dict(row) for row in table]
     if table == 'hackernews':
@@ -81,5 +77,5 @@ def rows_ab_test(table):
         return articles
     else:
         # Select articles at random
-        articles = random.sample(articles, k=ARTICLE_COUNT)
+        articles = random.sample(articles, k=article_count)
         return articles

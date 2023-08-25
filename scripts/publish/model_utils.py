@@ -27,13 +27,13 @@ def tokenize(rows):
     return inputs
 
 
-def classify(inputs, batch, batch_size=BATCH_SIZE):
+def classify(inputs, target_emotion):
     with torch.no_grad():
-        logits = model(**inputs).logits[:,TARGET_EMOTION]
+        logits = model(**inputs).logits[:,target_emotion]
     return logits
 
 
-def rank_articles(table, rows, article_count, batch_size=BATCH_SIZE):
+def rank_articles(table, rows, article_count, batch_size, target_emotion):
     scored_rows = []
     # Score posts by score of the comments, averaged.
     if table == 'hackernews':
@@ -46,14 +46,14 @@ def rank_articles(table, rows, article_count, batch_size=BATCH_SIZE):
 
             if comments_len <= batch_size:
                 inputs = tokenize(row_dict['comments'])
-                logits = classify(inputs)
+                logits = classify(inputs, target_emotion)
             else:
                 logits = torch.empty((0))
                 batches = math.ceil(comments_len / batch_size)
                 for i in range(batches):
                     comments = row.comments[i*batch_size:(i+1)*batch_size]
                     inputs = tokenize(comments)
-                    batch_logits = classify(inputs)
+                    batch_logits = classify(inputs, target_emotion)
                     logits = torch.cat((logits, batch_logits), dim=0)
             scores = torch.exp(logits)
             row_dict['score'] = torch.mean(scores).item()
@@ -67,7 +67,7 @@ def rank_articles(table, rows, article_count, batch_size=BATCH_SIZE):
             row_dict['summary'] = row['summary']
 
             inputs = tokenize([row['title'], row['summary']])
-            logits = classify(inputs)
+            logits = classify(inputs, target_emotion)
             scores = torch.exp(logits)
             row_dict['score'] = torch.mean(scores).item()
             scored_rows.append(row_dict)
@@ -86,4 +86,4 @@ def rank_articles(table, rows, article_count, batch_size=BATCH_SIZE):
 
     # Sort the results.
     articles = sorted(scored_rows, key=lambda x: x['score'], reverse=True)
-    return articles
+    return articles[:article_count]
