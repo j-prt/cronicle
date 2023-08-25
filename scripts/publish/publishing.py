@@ -1,28 +1,22 @@
 """Functionality for publishing emails via SendGrid"""
 
 
-import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from jinja2 import Template
 
 
-FROM_EMAIL=os.environ['FROM_EMAIL']
-TO_EMAIL=os.environ['TO_EMAIL']
-SENDGRID_API_KEY=os.environ['SENDGRID_API_KEY']
-
-
-def publish(all_articles):
+def publish(all_articles, from_email, to_email, sendgrid_api_key):
     with open('email_template.html', 'r') as f:
         template = Template(f.read())
 
     message = Mail(
-        from_email=FROM_EMAIL,
-        to_emails=TO_EMAIL,
+        from_email=from_email,
+        to_emails=to_email,
         subject='Today\'s News',
         html_content=template.render(all_articles=all_articles))
     try:
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)
         print(response.status_code)
     except Exception as e:
