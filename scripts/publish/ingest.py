@@ -12,20 +12,20 @@ SITE_LIST = [
     'npr_books',
     'nyt_books',
 ]
-
 TEST_SITES = [
     'arxiv',
     'hackernews',
     'techmeme',
 ]
+ARTICLE_COUNT = 5
 
-client = bigquery.Client()
 
 def _get_table_data(table):
+    client = bigquery.Client()
     if table == 'arxiv':
         opts = 'title, url, summary'
     elif table == 'hackernews':
-        opts = 'title, url, detail_url, comments'
+        opts = 'title, url, detail_url, comments, points'
     else:
         opts = 'title, url'
 
@@ -38,13 +38,13 @@ def _get_table_data(table):
         return None
     return rows
 
-for site in SITE_LIST:
-    rows = _get_table_data(site)
-    if rows.total_rows == 0:
-        print('Empty today')
-        continue
-    print(next(rows))
-    print('\n\n')
+# for site in SITE_LIST:
+#     rows = _get_table_data(site)
+#     if rows.total_rows == 0:
+#         print('Empty today')
+#         continue
+#     print(next(rows))
+#     print('\n\n')
 
 
 def process_table(table):
@@ -59,25 +59,33 @@ def process_table(table):
     #### TODO ####
     # Call to URL click-tracking API
 
-    rows = [dict(row) for row in rows]
+    articles = [dict(row) for row in rows]
 
-    return {table: rows}
-
+    return {table: articles}
 
 
 def process_table_test(table):
     ab = round(random.random())
 
     if ab == 1:
-        return randomize_rows(table)
+        #### TODO ####
+        # Add some logging to indicate this was a test
+        articles = rows_ab_test(table)
+    else:
+        tokenized_articles = tokenize_rows(table=table)
+        articles = classify(tokenized_articles, article_count=ARTICLE_COUNT)
 
-    inputs = tokenize_rows(table=table)
+    return {table: articles}
 
 
-
-
-def randomize_rows(table):
-    pass
-
-def tokenize_rows(table):
-    pass
+def rows_ab_test(table):
+    # Unpack the row iterator into a list
+    articles = [dict(row) for row in table]
+    if table == 'hackernews':
+        # Select top articles by points
+        articles = sorted(articles, key=lambda x: x['points'], reverse=True)
+        return articles
+    else:
+        # Select articles at random
+        articles = random.sample(articles, k=ARTICLE_COUNT)
+        return articles
