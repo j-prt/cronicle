@@ -38,14 +38,6 @@ def _get_table_data(table):
         return None
     return rows
 
-# for site in SITE_LIST:
-#     rows = _get_table_data(site)
-#     if rows.total_rows == 0:
-#         print('Empty today')
-#         continue
-#     print(next(rows))
-#     print('\n\n')
-
 
 def process_table(table):
     rows = _get_table_data(table)
@@ -71,10 +63,10 @@ def process_table_test(table, rows):
     if ab == 1:
         #### TODO ####
         # Add some logging to indicate this was a test
+        print(f'Unranked articles for {table}')
         articles = rows_ab_test(table)
     else:
-        # tokenized_articles = tokenize(table, rows)
-        # articles = classify(tokenized_articles, article_count=ARTICLE_COUNT)
+        print(f'Ranked articles for {table}')
         articles = rank_articles(table, rows, article_count=ARTICLE_COUNT)
 
     return {table: articles}
