@@ -4,5 +4,6 @@ venv/
 *.ipynb_checkpoints
 *.DS_Store
 *.env
-*.json
+checkpoints.json
+schemas.json
 *.csv

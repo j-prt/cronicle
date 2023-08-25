@@ -11,19 +11,59 @@ SITE_LIST = [
     'nyt_books',
 ]
 
+TEST_SITES = [
+    'arxiv',
+    'hackernews',
+    'techmeme',
+]
+
 client = bigquery.Client()
 
-def get_table_data(table):
-    QUERY = (
-        f'SELECT * FROM `article-source.article_views.{table}`')
-    query_job = client.query(QUERY)
+def _get_table_data(table):
+    if table == 'arxiv':
+        opts = 'title, url, summary'
+    elif table == 'hackernews':
+        opts = 'title, url, detail_url, comments'
+    else:
+        opts = 'title, url'
+
+    query = (f'''SELECT {opts}
+            FROM `article-source.article_views.{table}`''')
+    query_job = client.query(query)
     rows = query_job.result()
+
+    if rows.total_rows == 0:
+        return None
     return rows
 
 for site in SITE_LIST:
-    rows = get_table_data(site)
+    rows = _get_table_data(site)
     if rows.total_rows == 0:
         print('Empty today')
         continue
     print(next(rows))
     print('\n\n')
+
+
+def process_table(table):
+    if table in TEST_SITES:
+        return process_table_test(table)
+
+    rows = _get_table_data(table)
+    if not rows:
+        print(f'No data for {table}.')
+        return None
+
+    #### TODO ####
+    # Call to URL click-tracking API
+
+    rows = [dict(row) for row in rows]
+
+    return {table: rows}
+
+
+
+
+
+def process_table_test(rows):
+    pass
