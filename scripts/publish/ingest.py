@@ -1,6 +1,6 @@
 from google.cloud import bigquery
 import random
-from model_utils import tokenize_rows, classify
+from model_utils import rank_articles
 
 SITE_LIST = [
     'arxiv',
@@ -48,23 +48,24 @@ def _get_table_data(table):
 
 
 def process_table(table):
-    if table in TEST_SITES:
-        return process_table_test(table)
-
     rows = _get_table_data(table)
     if not rows:
         print(f'No data for {table}.')
         return None
 
+    if table in TEST_SITES:
+        articles = process_table_test(table, rows)
+
+    else:
+        articles = [dict(row) for row in rows]
+
     #### TODO ####
     # Call to URL click-tracking API
-
-    articles = [dict(row) for row in rows]
 
     return {table: articles}
 
 
-def process_table_test(table):
+def process_table_test(table, rows):
     ab = round(random.random())
 
     if ab == 1:
@@ -72,8 +73,9 @@ def process_table_test(table):
         # Add some logging to indicate this was a test
         articles = rows_ab_test(table)
     else:
-        tokenized_articles = tokenize_rows(table=table)
-        articles = classify(tokenized_articles, article_count=ARTICLE_COUNT)
+        # tokenized_articles = tokenize(table, rows)
+        # articles = classify(tokenized_articles, article_count=ARTICLE_COUNT)
+        articles = rank_articles(table, rows, article_count=ARTICLE_COUNT)
 
     return {table: articles}
 
