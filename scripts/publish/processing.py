@@ -1,5 +1,6 @@
 """Functions for data ingestion and processing"""
 
+
 from google.cloud import bigquery
 import random
 from model_utils import rank_articles
