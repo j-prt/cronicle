@@ -5,7 +5,7 @@ from google.cloud import bigquery
 import random
 from model_utils import rank_articles
 
-def get_table_data(table):
+def _get_table_data(table):
     client = bigquery.Client()
     if table == 'arxiv':
         opts = 'title, url, summary'
@@ -25,13 +25,13 @@ def get_table_data(table):
 
 
 def process_table(table, test_sites, article_count, batch_size, target_emotion):
-    rows = get_table_data(table)
+    rows = _get_table_data(table)
     if not rows:
         print(f'No data for {table}.')
         return None
 
     if table in test_sites:
-        articles = process_table_ab(
+        articles = _process_table_ab(
             table,
             rows,
             article_count,
@@ -48,14 +48,14 @@ def process_table(table, test_sites, article_count, batch_size, target_emotion):
     return {table: articles}
 
 
-def process_table_ab(table, rows, article_count, batch_size, target_emotion):
+def _process_table_ab(table, rows, article_count, batch_size, target_emotion):
     ab = round(random.random())
 
     if ab == 1:
         #### TODO ####
         # Add some logging to indicate this was the control
         print(f'Unranked articles for {table}')
-        articles = rows_control(table, article_count)
+        articles = _rows_control(table, article_count)
     else:
         print(f'Ranked articles for {table}')
         articles = rank_articles(
@@ -69,7 +69,7 @@ def process_table_ab(table, rows, article_count, batch_size, target_emotion):
     return {table: articles}
 
 
-def rows_control(table, article_count):
+def _rows_control(table, article_count):
     # Unpack the row iterator into a list
     articles = [dict(row) for row in table]
     if table == 'hackernews':
