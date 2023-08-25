@@ -1,0 +1,26 @@
+{
+  "name": "Article ETL",
+  "description": "Template for performing ETL on articles",
+  "parameters": [
+    {
+      "name": "input",
+      "label": "Article URI",
+      "helpText": "Path to article in GCS bucket"
+    },
+    {
+      "name": "schema_file",
+      "label": "Schemas URI",
+      "helpText": "Path to JSON file with schemas."
+    },
+    {
+      "name": "dataset",
+      "label": "BigQuery dataset",
+      "helpText": "BQ Dataset name"
+    },
+    {
+      "name": "table",
+      "label": "Target Table",
+      "helpText": "Name of the target table!"
+    }
+  ]
+}

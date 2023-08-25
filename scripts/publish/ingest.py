@@ -1,4 +1,6 @@
 from google.cloud import bigquery
+import random
+from model_utils import tokenize_rows, classify
 
 SITE_LIST = [
     'arxiv',
@@ -63,7 +65,19 @@ def process_table(table):
 
 
 
+def process_table_test(table):
+    ab = round(random.random())
+
+    if ab == 1:
+        return randomize_rows(table)
+
+    inputs = tokenize_rows(table=table)
 
 
-def process_table_test(rows):
+
+
+def randomize_rows(table):
+    pass
+
+def tokenize_rows(table):
     pass
