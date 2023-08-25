@@ -55,7 +55,7 @@ def _process_table_ab(table, rows, article_count, batch_size, target_emotion):
         #### TODO ####
         # Add some logging to indicate this was the control
         print(f'Unranked articles for {table}')
-        articles = _rows_control(table, article_count)
+        articles = _rows_control(table, rows, article_count)
     else:
         print(f'Ranked articles for {table}')
         articles = rank_articles(
@@ -66,16 +66,16 @@ def _process_table_ab(table, rows, article_count, batch_size, target_emotion):
             target_emotion=target_emotion
             )
 
-    return {table: articles}
+    return articles
 
 
-def _rows_control(table, article_count):
+def _rows_control(table, rows, article_count):
     # Unpack the row iterator into a list
-    articles = [dict(row) for row in table]
+    articles = [dict(row) for row in rows]
     if table == 'hackernews':
         # Select top articles by points
         articles = sorted(articles, key=lambda x: x['points'], reverse=True)
-        return articles
+        return articles[:article_count]
     else:
         # Select articles at random
         articles = random.sample(articles, k=article_count)

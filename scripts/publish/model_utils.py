@@ -76,7 +76,7 @@ def rank_articles(table, rows, article_count, batch_size, target_emotion):
             row_dict['title'] = row['title']
 
             inputs = _tokenize([row['title']])
-            logits = _classify(inputs)
+            logits = _classify(inputs, target_emotion)
             scores = torch.exp(logits)
             row_dict['score'] = scores.item()
             scored_rows.append(row_dict)
