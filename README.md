@@ -12,12 +12,20 @@ Key technologies/libraries:
 - [Bash](https://www.gnu.org/software/bash/) 
 - [PyTorch](https://pytorch.org/)
 - [HuggingFace](https://huggingface.co/)
+- [SendGrid](https://sendgrid.com/en-us)
 
 ## Overview
 
 graphic goes here
 
-brief explanation
+This illustrates the Cronicle data flow. 
+- Scrapers collect data from a number of sites
+- Initial processing, data is dumped to object storage (GCS)
+- Further processing - a Dataflow job is triggered by Pubsub to perform ETL, uploading to BQ
+- A containerized process can then be run to:
+  - query BQ
+  - run AI model inference
+  - publish emails based on model results
 
 ## Collection
 link to notebooks, scrapeit module
