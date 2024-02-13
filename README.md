@@ -13,6 +13,8 @@ Key technologies/libraries:
 - [PyTorch](https://pytorch.org/)
 - [HuggingFace](https://huggingface.co/)
 - [SendGrid](https://sendgrid.com/en-us)
+<br>
+Further details below!
 
 ## Overview
 
@@ -27,11 +29,15 @@ This illustrates the Cronicle data flow.
   - run AI model inference
   - publish emails based on model results
 
-## Collection
+### Collection
 link to notebooks, scrapeit module
+I selected a number of interesting sites regarding topics I enjoyed (tech news, movies, books) and wrote scraping scripts to collect data from each. The experimental process can be viewed in [the notebooks](./data/collection). I compiled these into [a module](./scripts/webscraping) to facilitate easy scraping with some args to customize the process. Scripts are run on a schedule, scraping and then uploading to GCS. 
 
-## Storage and Preprocessing
+### Storage and Preprocessing
 link to dataflow and talk about cloud functions
+Uploading to GCP triggers a Cloud Function (via PubSub) 
 
-## Inference and delivery 
+
+### Inference and delivery 
 discuss tools used for inference
+First, the inference script queries BQ. From there, it's set up to pretty much drop in any NLP inference model from the huggingface transformers library. The implementation available uses a BERT-based model to measure prominent emotions among the comments in [hackernews](https://news.ycombinator.com/) posts.
