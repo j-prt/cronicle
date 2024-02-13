@@ -18,26 +18,27 @@ Further details below!
 
 ## Overview
 
-graphic goes here
-
-This illustrates the Cronicle data flow. 
-- Scrapers collect data from a number of sites
-- Initial processing, data is dumped to object storage (GCS)
-- Further processing - a Dataflow job is triggered by Pubsub to perform ETL, uploading to BQ
-- A containerized process can then be run to:
-  - query BQ
-  - run AI model inference
-  - publish emails based on model results
+<div align=center>
+  graphic goes here
+  
+  The Cronicle data flow.</div>
+<br>
+1. Scrapers collect data from a number of sites
+2. Initial processing, data is dumped to object storage (GCS)
+3. Further processing - a Dataflow job is triggered by Pubsub to perform ETL, uploading to BQ
+4. A containerized process can then be run to:
+    * query BQ
+    * run AI model inference
+    * publish emails based on model results
 
 ### Collection
-link to notebooks, scrapeit module
 I selected a number of interesting sites regarding topics I enjoyed (tech news, movies, books) and wrote scraping scripts to collect data from each. The experimental process can be viewed in [the notebooks](./data/collection). I compiled these into [a module](./scripts/webscraping) to facilitate easy scraping with some args to customize the process. Scripts are run on a schedule, scraping and then uploading to GCS. 
 
 ### Storage and Preprocessing
-link to dataflow and talk about cloud functions
-Uploading to GCP triggers a Cloud Function (via PubSub) 
+Uploading to Cloud Storage triggers a Cloud Function (via PubSub) to run a Dataflow job that uploads processed articles as rows to BQ tables. This scales indefinitely as jobs are run in parallel. Scripts and templates used are in the [etl](./scripts/etl) folder.
 
 
 ### Inference and delivery 
-discuss tools used for inference
-First, the inference script queries BQ. From there, it's set up to pretty much drop in any NLP inference model from the huggingface transformers library. The implementation available uses a BERT-based model to measure prominent emotions among the comments in [hackernews](https://news.ycombinator.com/) posts.
+First, the inference script queries BQ. From there, it's set up to pretty much drop in any NLP inference model from the huggingface transformers library. The implementation available uses a BERT-based model to measure prominent emotions among the comments in [hackernews](https://news.ycombinator.com/) posts. After filtering, an email is published with links to the articles selected in inference.
+
+These scripts can be found in the [publish](./scripts/publish) folder.
