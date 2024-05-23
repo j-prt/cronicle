@@ -19,7 +19,7 @@ Further details below!
 ## Overview
 
 <div align=center>
-  graphic goes here
+  <img src="https://i.imgur.com/b8yts2G.jpeg">
   
   The Cronicle data flow.</div>
 <br>
